@@ -52,13 +52,19 @@ class WordVec(nn.Module):
         ### TODO(students): start
         if (k['status'] == False):
             # All words get same negative samples
-            negEmbed = tf.nn.embedding_lookup(weights, sample)
-            negBias = tf.nn.embedding_lookup(biases, sample)
+
+            # tmp = torch.tensor(random.sample(rng, rest.size(0)))
+            # mask = torch.from_numpy(np.isin(tmp, idx)).to(torch.bool)
+            # perm[rest] = tmp
+            # rest = rest[mask.nonzero().view(-1)]
+
+            negEmbed = torch.nn.Embedding(center_word, self.counts)
+            negBias = torch.nn.Embedding(context_word, self.counts)
             return negEmbed, negBias
 
         else:
             # Each word gets a different negative sample
-            k = max(len(sample), diffK['k'])
+            loss = max(len(self.counts), k['k'])
 
         ### TODO(students): end
 
