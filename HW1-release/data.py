@@ -44,9 +44,9 @@ class Dataset:
         """
         @data_index: the index of a word. You can access a word using data[data_index]
         @batch_size: the number of instances in one batch
-        @num_skips: the number of samples you want to draw in a window 
+        @num_skips: the number of samples you want to draw in a window
                 (In the below example, it was 2)
-        @skip_windows: decides how many words to consider left and right from a context word. 
+        @skip_windows: decides how many words to consider left and right from a context word.
                     (So, skip_windows*2+1 = window_size)
         """
 
@@ -58,7 +58,7 @@ class Dataset:
         self.batch_size = batch_size
         self.num_skips = num_skips
         self.skip_window = skip_window
-    
+
     def reset_index(self, idx=0):
         self.data_index=idx
 
@@ -74,7 +74,7 @@ class Dataset:
         center_word = np.ndarray(shape=(self.batch_size), dtype=np.int32)
         #lables
         context_word = np.ndarray(shape=(self.batch_size, 1), dtype=np.int32)
-        
+
         # stride: for the rolling window
         stride = 1
 
@@ -84,19 +84,6 @@ class Dataset:
 
         # batch 파일 만들고, 2번째는 로스 포뮬라 코드 짜기, 보고서 작성
         ### TODO(students): start
-
-        # for _ in range(span):
-        #     buffer.append(self.data[self.data_index])
-        #     self.data_index = (self.data_index + stride) % len(self.data)
-        #
-        # for i in range(self.batch_size):
-        #     # target label at the center of the buffer
-        #     target = self.skip_window
-        #     #피해진 타겟을 말한는거
-        #     no_target = [self.skip_window]
-        #     buffer.append(self.data[self.data_index])
-        #     self.data_index = (self.data_index + 1) % len(self.data)
-        # return center_word, context_word
 
         self.data_index = self.data_index + self.skip_window
         if self.data_index == 0:

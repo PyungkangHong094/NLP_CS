@@ -48,27 +48,25 @@ class WordVec(nn.Module):
         return loss
     
     def negative_sampling(self, center_word, context_word):
-        k = {'status': False, 'k': 0}
-        ### TODO(students): start
-        if (k['status'] == False):
-            # All words get same negative samples
+        k = 1
 
-            # tmp = torch.tensor(random.sample(rng, rest.size(0)))
-            # mask = torch.from_numpy(np.isin(tmp, idx)).to(torch.bool)
-            # perm[rest] = tmp
-            # rest = rest[mask.nonzero().view(-1)]
+        vector_tensor = self.center_embeddings(center_word)
+        tensor = self.context_embeddings(context_word)
 
-            negEmbed = torch.nn.Embedding(center_word, self.counts)
-            negBias = torch.nn.Embedding(context_word, self.counts)
-            return negEmbed, negBias
+        unif_dist = torch.ones(self.context_embeddings.weight.shape[0])
+        # print(unif_dist)
 
-        else:
-            # Each word gets a different negative sample
-            loss = max(len(self.counts), k['k'])
+        indices = unif_dist.multinomial(k).to("cuda:0" if torch.cuda.is_available() else "cpu")
+        k_samples = self.context_embeddings(indices)
+        first_part = 0 - torch.log(torch.sigmoid(torch.mul(tensor,vector_tensor)))
 
-        ### TODO(students): end
+        second_part = torch.sum(torch.log(torch.matmul(torch.neg(k_samples),vector_tensor.T)),dim=1)
+
+        loss = torch.sub(first_part, second_part)
+        loss = loss.mean()
 
         return loss
+
 
     def print_closest(self, validation_words, reverse_dictionary, top_k=8):
         print('Printing closest words')
@@ -83,4 +81,4 @@ class WordVec(nn.Module):
         for i in range(len(validation_ids)):
             word = reverse_dictionary[validation_words[i]]
             nearest = (-similarity[i, :]).argsort()[1:top_k+1]
-            print(word, [reverse_dictionary[nearest[k]] for k in range(top_k)])            
+            print(word, [reverse_dictionary[nearest[k]] for k in range(top_k)])
