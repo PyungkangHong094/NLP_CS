@@ -4,13 +4,14 @@ editor-gh: ykl7
 """
 
 import collections
+import random
 
 import numpy as np
 import torch
-import random
 
 np.random.seed(1234)
 torch.manual_seed(1234)
+
 
 # Read the data into a list of strings.
 def read_data(filename):
@@ -18,6 +19,7 @@ def read_data(filename):
         text = file.read()
         data = [token.lower() for token in text.strip().split(" ")]
     return data
+
 
 def build_dataset(words, vocab_size):
     count = [['UNK', -1]]
@@ -39,6 +41,7 @@ def build_dataset(words, vocab_size):
     vocab_id_to_token = dict(zip(vocab_token_to_id.values(), vocab_token_to_id.keys()))
     return data, count, vocab_token_to_id, vocab_id_to_token
 
+
 class Dataset:
     def __init__(self, data, batch_size=128, num_skips=8, skip_window=4):
         """
@@ -49,7 +52,6 @@ class Dataset:
         @skip_windows: decides how many words to consider left and right from a context word.
                     (So, skip_windows*2+1 = window_size)
         """
-
         self.data_index = 0
         self.data = data
         assert batch_size % num_skips == 0
@@ -60,7 +62,7 @@ class Dataset:
         self.skip_window = skip_window
 
     def reset_index(self, idx=0):
-        self.data_index=idx
+        self.data_index = idx
 
     def generate_batch(self):
         """
@@ -69,45 +71,36 @@ class Dataset:
         batch will contain word ids for context words. Dimension is [batch_size].
         labels will contain word ids for predicting(target) words. Dimension is [batch_size, 1].
         """
+        ### TODO(students):
 
-        #batch 증명한 단어
         center_word = np.ndarray(shape=(self.batch_size), dtype=np.int32)
-        #lables
         context_word = np.ndarray(shape=(self.batch_size, 1), dtype=np.int32)
 
         # stride: for the rolling window
         stride = 1
 
-        #스킵 윈도우 타겟 스킵윈도우 skip
-        span = 2 * self.skip_window + 1
-        buffer = collections.deque(maxlen=span)
-
-        # batch 파일 만들고, 2번째는 로스 포뮬라 코드 짜기, 보고서 작성
-        ### TODO(students): start
-
-        self.data_index = self.data_index + self.skip_window
+        batch_size = 0
         if self.data_index == 0:
-            print("-")
+            self.data_index = self.data_index + self.skip_window
         else:
             self.data_index
+
         self.data_index = self.data_index % len(self.data)
-        # Used to keep track of the number of words in the batch so far
-        batch_size = 0
-        index = 1
+        # 지금까지 배치에 포함된 단어 수를 추적하는 데 사용됩니다.
+
         while batch_size < self.batch_size:
-            context_word[batch_size:batch_size + self.num_skips] = self.data[self.data_index]
-            #index를 더해서 기존에 데이터를 더한다
-            Add_data_index = self.data_index + index
-
-            arry_window = self.data[self.data_index - self.skip_window:self.data_index] + self.data[Add_data_index: Add_data_index + self.skip_window]
+            n = 1
+            batch_sum_num = batch_size + self.num_skips
+            context_word[batch_size:batch_sum_num] = self.data[self.data_index]
+            # 창에서 가능한 모든 컨텍스트 단어 추출
+            temp_window = self.data[self.data_index - self.skip_window: self.data_index] + self.data[ self.data_index + n:self.data_index + n + self.skip_window]
             # 문맥 단어의 무작위 샘플링입니다. num_skips는 창 크기보다 작을 수 있습니다.
-            sample_window = np.random.choice(arry_window, size=self.num_skips, replace=False)
-            center_word[batch_size:batch_size + self.num_skips] = sample_window
+            sampled_window = np.random.choice(temp_window, size=self.num_skips, replace=False)
+            center_word[batch_size:batch_sum_num] = sampled_window
+            # 종료 조건에 대한 업데이트
+            batch_size = batch_sum_num
 
-            batch_size = batch_size + self.num_skips
             self.data_index = self.data_index + stride
-
-        return center_word, context_word
 
         ### TODO(students): end
         return torch.LongTensor(center_word), torch.LongTensor(context_word)

@@ -38,33 +38,32 @@ class WordVec(nn.Module):
 
     def negative_log_likelihood_loss(self, center_word, context_word):
         ### TODO(students): start
-        A = np.sum(np.multiply(context_word, center_word), axis=1)
-        center_word = np.transpose(center_word)
-        B = np.log(np.sum(np.exp(np.matmul(context_word, center_word)), axis=1))
-        # A, B 둘 다 reduce_sum 의 equivalent 찾아서 변환
-        loss = np.subtract(B, A)
-        ### TODO(students): end
 
+        Context = self.context_embeddings(context_word)
+        Center = self.center_embeddings(center_word)
+
+        trans_p = torch.matmul(torch.transpose(Context, 0, 1), torch.transpose(Center, 0, 1))
+        B = torch.logsumexp(trans_p, 1)
+        A = torch.matmul(torch.transpose(Context, 0, 1), torch.transpose(Center, 0, 1))
+        loss = torch.sub(B, A)
+        loss = loss.mean()
         return loss
     
     def negative_sampling(self, center_word, context_word):
         k = 1
+        data_tensor = self.center_embeddings(center_word)
+        conv_tensor = self.context_embeddings(context_word)
 
-        vector_tensor = self.center_embeddings(center_word)
-        tensor = self.context_embeddings(context_word)
-
-        unif_dist = torch.ones(self.context_embeddings.weight.shape[0])
-        # print(unif_dist)
-
-        indices = unif_dist.multinomial(k).to("cuda:0" if torch.cuda.is_available() else "cpu")
-        k_samples = self.context_embeddings(indices)
-        first_part = 0 - torch.log(torch.sigmoid(torch.mul(tensor,vector_tensor)))
-
-        second_part = torch.sum(torch.log(torch.matmul(torch.neg(k_samples),vector_tensor.T)),dim=1)
-
-        loss = torch.sub(first_part, second_part)
+        first_part = -torch.log(torch.sigmoid(torch.matmul(torch.transpose(conv_tensor, 0, 1),data_tensor)))
+        second_part = torch.sum(torch.sigmoid((torch.matmul(torch.multinomial(self.counts, k), 1), data_tensor)))
+        # torch.log(second_part)
+        loss = torch.add(first_part,second_part )
         loss = loss.mean()
 
+
+
+        # # second_part = torch.sum(torch.log(torch.matmul(torch.neg(k_samples),vector_tensor.T)),dim=1)
+        # loss = torch.sub(first_part, second_part)
         return loss
 
 
